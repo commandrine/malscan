@@ -44,28 +44,6 @@ check_root() {
     fi
 }
 
-check_supported_os() {
-    if [[ ! -r /etc/os-release ]]; then
-        log_error "Cannot determine the operating system."
-        exit 1
-    fi
-
-    # shellcheck disable=SC1091
-    source /etc/os-release
-    if [[ "${ID:-}" != "ubuntu" ]]; then
-        log_error "This script supports Ubuntu only (detected: ${PRETTY_NAME:-unknown})."
-        exit 1
-    fi
-
-    # Ubuntu 24.04 LTS and 26.04 LTS are currently the supported release lines.
-    if [[ ":$SUPPORTED_UBUNTU_VERSIONS:" != *":${VERSION_ID:-}:"* ]]; then
-        if [[ "${VERSION_ID:-}" != "24.04" && "${VERSION_ID:-}" != "26.04" ]]; then
-            log_error "Unsupported Ubuntu release: ${PRETTY_NAME:-$VERSION_ID}. Use Ubuntu 24.04 or 26.04 LTS."
-            exit 1
-        fi
-    fi
-}
-
 show_help() {
     cat <<'EOF'
 Malware Scanner Setup and Execution Script
@@ -98,7 +76,7 @@ parse_arguments() {
             -m|--maldet) scan_mode="maldet"; shift ;;
             -a|--all) scan_mode="all"; shift ;;
             -h|--help) show_help; exit 0 ;;
-            -*) log_error "Unknown option: $1"; show_help; exit 1 ;;
+            -* ) log_error "Unknown option: $1"; show_help; exit 1 ;;
             *) SCAN_DIRECTORY="$1"; shift ;;
         esac
     done
@@ -419,7 +397,6 @@ main() {
     log_info "Log directory: $LOG_DIR"
 
     check_root
-    check_supported_os
 
     setup_logging
 
@@ -427,7 +404,7 @@ main() {
     [[ "$SCAN_CLAMAV" == true ]] && engines_str="ClamAV"
     if [[ "$SCAN_MALDET" == true ]]; then
         [[ -n "$engines_str" ]] && engines_str+=", "
-        engines_str+="Maldet"
+        engines_str+= "Maldet"
     fi
     log_info "Scan engines: $engines_str"
 
